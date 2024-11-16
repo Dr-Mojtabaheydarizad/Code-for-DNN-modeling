@@ -1,0 +1,62 @@
+# install and load the necessary packages
+install.packages("h2o")
+install.packages("readr")
+install.packages("caret")
+install.packages("methods")
+
+library(h2o)
+library(readr)
+library(caret)
+library(methods)
+
+# initialize h2o
+h2o.init()
+
+# load the data
+path <- "D:/Education/Water journal-2/DNN"
+setwd(path)
+z <- read_csv("IRAN-DNN.csv")
+
+# set variable names for input features
+inputs <- z[,c("Temperature","Precipitation","Latitude","Longtitude","Altitude")]
+
+# create a response variable
+Y <- z$18O
+
+# convert data to h2o format
+inputs_h2o <- as.h2o(inputs)
+Y_h2o <- as.h2o(Y)
+
+# create a new H2OFrame that combines the response variable with the input variables
+data_h2o <- h2o.cbind(Y_h2o, inputs_h2o)
+
+# partition the data into training and testing sets
+splits <- h2o.splitFrame(data = data_h2o, ratios = 0.7, seed = 123)
+train <- splits[[1]]
+test <- splits[[2]]
+
+# define a deep learning model using h2o
+model <- h2o.deeplearning(
+x = names(inputs_h2o),
+y = "18O
+",
+training_frame = train,
+validation_frame = test,
+activation = "RectifierWithDropout",
+hidden = c(50, 50, 50), # example architecture with three hidden layers
+l1 = 1e-5, # L1 regularization
+l2 = 1e-5, # L2 regularization
+input_dropout_ratio = 0.2, # input layer dropout
+hidden_dropout_ratios = c(0.5, 0.5, 0.5), # hidden layers dropout
+epochs = 90, # example number of epochs
+adaptive_rate = TRUE, # use adaptive learning rate
+loss = "automatic", # loss function
+seed = 123 # for reproducibility
+)
+
+# train the model
+model.train()
+
+# evaluate model performance
+performance <- h2o.performance(model, newdata = test)
+print(performance)
